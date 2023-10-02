@@ -2,57 +2,34 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "./square.h"
-#include "./Snake.h"
-#include "./snakeGame.h"
+#include "../utils/square.h"
+#include "./snake.h"
+#include "./board.h"
+#include "./snakeEngine.h"
 
-void _drawSquareOnBoard(SnakeGame *game, Square *square){
-    game->board[square->row][square->col] = square->type;
-}
 
-//returns true if square is in same pos as snake
-bool _isSquareOnSnakeOrWall(SnakeGame *game, Square *square){
-    if (square->row < 0 
-    || square->row > game->maxRow
-    || square->col < 0
-    || square->col > game->maxCol) return true;
-    return game->board[square->row][square->col] == SNAKE;
-}
-
-Square *_generateFood(SnakeGame *game){
-    Square *food = Square_random(
-        game->maxRow,
-        game->maxCol,
+Square _SnakeEngine_generateFood(SnakeEngine *game){
+    Square food = Square_random(
+        game->board->rows,
+        game->board->cols,
         FOOD
     );
 
     while(_isSquareOnSnakeOrWall(game, food)){
-        free(food);
-        food = Square_random(game->maxRow, game->maxCol, FOOD);
+        food = Square_random(game->board->rows, game->board->cols, FOOD);
     }
 
     return food;
 }
 
-SnakeGame *SnakeGame_new(int width, int height){
+SnakeEngine *SnakeEngine_new(int width, int height, int snakeRow, int snakeCol){
+    SnakeEngine *game = malloc(sizeof(SnakeEngine));
+    game->score = 1;
+    game->board = Board_new(width, height);
 
-    
-    SnakeGame *game = malloc(sizeof(SnakeGame));
-    game -> gameover = false;
-    game->maxRow = width - 1;
-    game->maxCol = height - 1;
-
-    game->board = malloc(width * sizeof(SquareType*));
-    for (int x = 0; x < width; x++){
-        game->board[x] = malloc(height * sizeof(SquareType));
-        for (int y = 0; y < height; y++){
-            game->board[x][y] = EMPTY;
-        }
-    }
-
-    Square *snakeHead = Square_random(
-        game->maxRow,
-        game->maxCol,
+    Square snakeHead = Square_random(
+        snakeRow,
+        snakeCol,
         SNAKE
     );
     _drawSquareOnBoard(game, snakeHead);
@@ -65,7 +42,7 @@ SnakeGame *SnakeGame_new(int width, int height){
     return game;
 }
 
-void SnakeGame_free(SnakeGame *game){
+void SnakeEngine_free(SnakeEngine *game){
     Snake_free(game -> snake);
 
     for (int x = 0; x <= game->maxRow; x++){
@@ -76,7 +53,7 @@ void SnakeGame_free(SnakeGame *game){
     free(game);
 }
 
-UpdatedSquares *SnakeGame_progress(SnakeGame *game, Input inputDirection){
+UpdatedSquares *SnakeEngine_progress(SnakeEngine *game, Input inputDirection){
     UpdatedSquares *updatedSquares = malloc(sizeof(updatedSquares));
     Snake_updateDirection(game->snake, inputDirection);
     updatedSquares->snakesMovedInto = Snake_nextSquare(game->snake);
@@ -87,6 +64,7 @@ UpdatedSquares *SnakeGame_progress(SnakeGame *game, Input inputDirection){
 
     //if snake has eaten food
     if (game->board[updatedSquares->snakesMovedInto->row][updatedSquares->snakesMovedInto->col] == FOOD){
+        game -> score ++;
         Snake_moveGrow(game->snake, updatedSquares->snakesMovedInto);
         _drawSquareOnBoard(game, updatedSquares->snakesMovedInto); //draw square snakes moved into
         updatedSquares->food = _generateFood(game);

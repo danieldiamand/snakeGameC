@@ -4,9 +4,9 @@
 #include <SDL2/SDL.h>
 
 #include "./input.h"
-#include "./snakeGame/square.h"
-#include "./snakeGame/snake.h"
-#include "./snakeGame/snakeGame.h"
+#include "./snakeEngine/square.h"
+#include "./snakeEngine/snake.h"
+#include "./snakeEngine/snakeGame.h"
 
 typedef struct
 {
@@ -204,6 +204,7 @@ int main()
         if (i > 4){
             _updateInput(&game, &input);
             UpdatedSquares *update = _update(&game, input, &lastFrameTime);
+            if (game.snakeGame->gameover) break;
             _render(&game, update->snakesMovedInto, update->snakesLeft, update->food);
             free(update);
             i = 0;
@@ -212,15 +213,14 @@ int main()
             _updateInput(&game, &input);
             _pauseToFrame(&lastFrameTime);
         }
-        
-
         i++;
     }
-    
 
+    printf("Game Over, score of %i.\n", game.snakeGame->score);
+    SDL_Delay(3000);
     SnakeGame_free(game.snakeGame);
     _freeWindowRenderer(&game);
     return 0;
 }
 
-//TODO: code render code, draw first snake blob
+//the problem is its hitting snakes that don't get removed
